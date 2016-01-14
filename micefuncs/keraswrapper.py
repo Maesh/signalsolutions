@@ -3,8 +3,9 @@ import pandas as pd
 
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation
-from keras.optimizers import Adadelta
+from keras.optimizers import Adadelta, SGD
 from keras.layers.normalization import BatchNormalization
+from keras.constraints import maxnorm
 
 import time
 
@@ -35,7 +36,10 @@ class NN:
                 print ("Adding " + str(dropout[i]) + " dropout")
                 model.add(Dropout(dropout[i]))
         model.add(Dense(1, init = init)) #End in a single output node for regression style output
-        model.compile(loss=loss, optimizer=optimizer)
+        
+        sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+
+        model.compile(loss=loss, optimizer=sgd)
         
         self.model = model
         self.nb_epochs = nb_epochs
@@ -45,7 +49,7 @@ class NN:
         self.show_accuracy = show_accuracy
 
     def fit(self, X, y): 
-        self.model.fit(X.values, y.values, nb_epoch=self.nb_epochs, 
+        self.model.fit(X, y, nb_epoch=self.nb_epochs, 
             batch_size=self.batch_size, verbose = self.verbose, validation_split=self.validation_split,
             show_accuracy = self.show_accuracy)
         
