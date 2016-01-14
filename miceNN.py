@@ -10,7 +10,7 @@ import numpy as np
 from inputs.miceinputs import miceloader
 from micefuncs.keraswrapper import NN
 from sklearn import cross_validation, preprocessing, metrics
-from micefuncs.miceFuncs import onehotcoder
+from micefuncs.miceFuncs import onehotcoder, spliteven, evenup
 
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation
@@ -54,8 +54,23 @@ if __name__ == '__main__':
 
 	# metrics.classification_report(y_test,testpreds)
 
-	y_train = onehotcoder(y_train)
-	y_test = onehotcoder(y_test)
+	# Fake class equal probability with custom spliteven function
+	# X_train, y_train = spliteven(X_train,y_train,bootstrap = False, size = 1)
+	# Didn't work, it trained extremely well but it did not perform well at
+	# all on validation set
+
+	# We can however augment the classes by bootstrap resampling, with
+	# the custom function evenup
+	X_train, y_train = evenup(X_train,y_train)
+
+
+
+	# neural network handles categorical variables in one hot manner. 
+	# since we have 3 classes, we need three neurons, each corresponding
+	# to a class. A given class will be fed as a 1 to a given neuron, and 
+	# the others, 0. This custom function handles the conversion of 
+	# labels to accommodate this.
+	y_train_onehot = onehotcoder(y_train)
 
 	model = Sequential()
 	# Dense(64) is a fully-connected layer with 64 hidden units.
@@ -80,15 +95,16 @@ if __name__ == '__main__':
 	model.compile(loss='categorical_crossentropy', optimizer=sgd)
 
 	# Batch size = 100 seems to have stabilized it
-	model.fit(X_train, y_train, nb_epoch=10, batch_size=128)
+	model.fit(X_train, y_train_onehot, nb_epoch=10, batch_size=128)
 	predictions = model.predict(X_val,batch_size=128)
 
+	# Convert resulting predictions back to labels 1, 2, and 3
 	# Take max value in preds rows as classification
 	pred = np.zeros((len(X_val)))
-	yint = np.zeros((len(X_val)))
+	# yint = np.zeros((len(X_val)))
 	for row in np.arange(0,len(predictions)) :
-		pred[row] = np.argmax(predictions[row])
-		yint[row] = np.argmax(y_test[row])
+		pred[row] = np.argmax(predictions[row]) + 1
+		# yint[row] = np.argmax(y_test[row])
 
-
+	print(metrics.classification_report(y_val,pred))
 	

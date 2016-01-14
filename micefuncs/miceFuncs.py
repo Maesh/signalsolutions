@@ -117,9 +117,45 @@ def spliteven(X, y, bootstrap = False, size = 0.67) :
 	newX = np.empty((segmentcount*3,X.shape[1]))
 	newy = np.empty((segmentcount*3,))
 	# drop in kept behavior segments
-	newX[:segmentcount,:] 				= X[y==3][reminx]
-	newX[segmentcount:2*segmentcount,:]	= X[y==2][nreminx]
-	newX[2*segmentcount:,:] 			= X[y==1][wakeinx]
+	newX[:segmentcount,:] 				= X[y[y==3]][reminx]
+	newX[segmentcount:2*segmentcount,:]	= X[y[y==2]][nreminx]
+	newX[2*segmentcount:,:] 			= X[y[y==1]][wakeinx]
+
+	newy[:segmentcount] 				= y[y==3][reminx]
+	newy[segmentcount:2*segmentcount]	= y[y==2][nreminx]
+	newy[2*segmentcount:] 				= y[y==1][wakeinx]
+	# return the new matrices
+	return newX.astype(int), newy.astype(int) # make sure they're int
+
+def evenup(X,y) :
+	"""
+	bootstrap resamples the minority classes in X to 
+	provide equal representation in training
+	"""
+	# Number of rem, wake, nrem segments
+	remcount = len(y[y==3])
+	nremcount = len(y[y==2])
+	wakecount = len(y[y==1])
+
+	# the max of the three above will stay the same, the
+	# rest of the classes will be augmented with 
+	# bootstrap resamples
+	segmentcount = np.max([remcount,nremcount,wakecount])
+	# new training matrices
+	newX = np.empty((segmentcount*3,X.shape[1]))
+	newy = np.empty((segmentcount*3,))
+
+	# select bootstrap sample indices
+	reminx = np.random.choice(remcount,
+			size = segmentcount, replace = True)
+	nreminx = np.random.choice(nremcount,
+		size = segmentcount, replace = True)
+	wakeinx = np.random.choice(wakecount,
+		size = segmentcount, replace = True)
+
+	newX[:segmentcount] 				= X[y[y==3]][reminx]
+	newX[segmentcount:2*segmentcount,:]	= X[y[y==2]][nreminx]
+	newX[2*segmentcount:,:] 			= X[y[y==1]][wakeinx]
 
 	newy[:segmentcount] 				= y[y==3][reminx]
 	newy[segmentcount:2*segmentcount]	= y[y==2][nreminx]
