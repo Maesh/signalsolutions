@@ -162,3 +162,25 @@ def evenup(X,y) :
 	newy[2*segmentcount:] 				= y[y==1][wakeinx]
 	# return the new matrices
 	return newX.astype(int), newy.astype(int) # make sure they're int
+
+def contextfeats(X, time_step = 4) :
+	"""
+	Returns a feature matrix containing contextual features
+	for every time segment by expanding the dimensionality 
+	of the feature matrix and concatenating previous time steps
+
+	time_step argument allows user to define length of recursive
+	feature inclusion
+	"""
+
+	# Build feature matrix
+	# Want to test if contextual feature info makes a difference
+	# So build feature matrix with 3x number of columns to features
+	newX = np.zeros((X.shape[0],(time_step + 1)*X.shape[1]))
+	newX[:,:X.shape[1]] = X
+	
+	for i in range(time_step - 1) :
+		newX[(i + 1):, (i+1) * X.shape[1] : (i+2) * X.shape[1] ] = X[:-(i+1)]
+
+	newX[time_step:,time_step * X.shape[1]:] = X[:-time_step]
+	return newX

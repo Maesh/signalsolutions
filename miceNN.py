@@ -10,7 +10,7 @@ import numpy as np
 from inputs.miceinputs import miceloader
 from micefuncs.keraswrapper import NN
 from sklearn import cross_validation, preprocessing, metrics
-from micefuncs.miceFuncs import onehotcoder, spliteven, evenup
+from micefuncs.miceFuncs import onehotcoder, spliteven, evenup, contextfeats
 
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation
@@ -41,6 +41,7 @@ if __name__ == '__main__':
 		cross_validation.train_test_split(X_train, y_train, \
 			test_size=0.2, random_state=rs)
 
+
 	# clf = NN(inputShape = X_train.shape[1], layers = [64, 64], 
 	#     dropout = [0.5, 0.5], loss='rmse', optimizer = 'adadelta', 
 	#     init = 'glorot_normal', nb_epochs = 10, validation_split=0,
@@ -54,6 +55,10 @@ if __name__ == '__main__':
 
 	# metrics.classification_report(y_test,testpreds)
 
+	# add contextual features?
+	X_train = contextfeats(X_train)
+	X_val = contextfeats(X_val)
+
 	# Fake class equal probability with custom spliteven function
 	# X_train, y_train = spliteven(X_train,y_train,bootstrap = False, size = 1)
 	# Didn't work, it trained extremely well but it did not perform well at
@@ -61,7 +66,9 @@ if __name__ == '__main__':
 
 	# We can however augment the classes by bootstrap resampling, with
 	# the custom function evenup
-	X_train, y_train = evenup(X_train,y_train)
+	# X_train, y_train = evenup(X_train,y_train)
+	# Didn't work either
+
 
 
 
@@ -79,7 +86,7 @@ if __name__ == '__main__':
 	model.add(Dense(32, input_dim=X_train.shape[1], init='uniform'))
 	model.add(Activation('relu'))
 	model.add(Dropout(0.5))
-	model.add(Dense(64, init='uniform',input_dim=8))
+	model.add(Dense(64, init='uniform',input_dim=32))
 	model.add(Activation('relu'))
 	model.add(Dropout(0.5))
 	model.add(Dense(32, init='uniform',input_dim=64))
@@ -92,7 +99,7 @@ if __name__ == '__main__':
 	
 	# Use mean absolute error as loss function since that is 
 	# what kaggle uses
-	model.compile(loss='categorical_crossentropy', optimizer=sgd)
+	model.compile(loss='binary_crossentropy', optimizer=sgd)
 
 	# Batch size = 100 seems to have stabilized it
 	model.fit(X_train, y_train_onehot, nb_epoch=10, batch_size=128)
@@ -107,4 +114,6 @@ if __name__ == '__main__':
 		# yint[row] = np.argmax(y_test[row])
 
 	print(metrics.classification_report(y_val,pred))
+	print('Confusion Matrix')
+	print(metrics.confusion_matrix(y_val,pred))
 	

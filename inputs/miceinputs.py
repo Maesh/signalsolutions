@@ -14,12 +14,19 @@ import numpy.random as npr
 import scipy.io as sio
 
 class miceloader :
-	def __init__ (self, trainmice = 14, random_state = 2016, datadir = 'MiceData/Feats File/') :
+	def __init__ (self, trainmice = 14, random_state = 2016, data_type = 'feats') :
 		"""
 		Initializes class. Can add functionality to allow user 
 		to input list of mice later if more are added.
 		"""
 		
+		if data_type == 'feats' :
+			datadir = 'MiceData/Feats File/'
+		elif data_type == 'raw' :
+			datadir = 'MiceData//'
+		else :
+			raise ValueError('data_type argument must be either feats or raw')
+
 		# List of all possible mice
 		self.micelist = ['feats_UK5.mat','feats_UK14.mat','feats_UK17.mat',
 			'feats_UK18.mat','feats_UK19.mat','feats_UK20.mat','feats_UK21.mat',
@@ -68,3 +75,5 @@ class miceloader :
 
 
 		return X_train, X_test, y_train[0], y_test[0]
+
+		def getrawdata (self) :
