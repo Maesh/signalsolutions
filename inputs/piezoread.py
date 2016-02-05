@@ -53,7 +53,8 @@ class PiezoReader :
 			matdict['labels'] = self.labels
 			matdict['fs'] = self.fs
 			savename = 'MiceData/' + filename.strip('.mat') + '.2scored.signal.matrix'
-			# Using format '6' across the board
+			# Using format '4' across the board to ensure files can be opened and
+			# closed. I'd like to more to a more universal format (hdf5 maybe, or json?)
 			sio.savemat(savename, matdict, appendmat = True, format = '4')
 
 		return self.piezomat, self.labels
