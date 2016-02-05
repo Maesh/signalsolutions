@@ -54,7 +54,7 @@ class PiezoReader :
 			matdict['fs'] = self.fs
 			savename = 'MiceData/' + filename.strip('.mat') + '.2scored.signal.matrix'
 			# Using format '6' across the board
-			sio.savemat(savename, matdict, appendmat = True)
+			sio.savemat(savename, matdict, appendmat = True, format = '4')
 
 		return self.piezomat, self.labels
 
