@@ -7,15 +7,8 @@ Written by Ryan Gooch, Feb 2016
 """
 import pandas as pd
 import numpy as np 
-from scipy.io import loadmat
+import scipy.io as sio
 from scipy.signal import resample
-
-# Not pretty. Need to fix
-# Right now I'm using this since no good
-# edf reader seems to exist in python,
-# and since most of the code for this problem
-# lives in matlab anyway. Workable solution for now
-octave.addpath(octave.genpath('./'))
 
 class PiezoReader :
 	"""
@@ -27,14 +20,22 @@ class PiezoReader :
 		# Set our sampling rate
 		self.fs = fs
 
-	def openmat (self, filepath, filename) :
+	def openmat (self, filepath, filename, savemat = False) :
 		"""
 		Open the edf for reading
 		"""
-		print('Opening EDF')
+		# Need to fake header. If we refactor this to actually
+		# open the EDFs, then the header will be given
+		# For now, we know the relevant values
+
+		self.header = {}
+		self.header['duration'] = 10
+		self.header['samples'] = np.array([[4000,4000,4000,4000,400]])
+		# EEG1, EEG2, EMG, Piezo, EDF Annotations
+		print('Opening mat file')
 		self.filename = filename
 		self.filepath = filepath
-		matdata = loadmat(filepath+filename)
+		matdata = sio.loadmat(filepath+filename)
 		self.rawpiezo = matdata['Piezo'][0]
 
 		# Go ahead and process it
@@ -44,7 +45,20 @@ class PiezoReader :
 		print('Removing segments with scorer disagreement')
 		self.labelspiezo()
 		print('Done!')
+
+		# If flagged, save the matrix
+		if savemat == True :
+			matdict = {}
+			matdict['piezomat'] = self.piezomat
+			matdict['labels'] = self.labels
+			matdict['fs'] = self.fs
+			savename = 'MiceData/' + filename.strip('.mat') + '.2scored.signal.matrix'
+			# Using format '6' across the board
+			sio.savemat(savename, matdict, appendmat = True)
+
 		return self.piezomat, self.labels
+
+		
 
 	def processpiezo (self) :
 		"""
@@ -66,15 +80,15 @@ class PiezoReader :
 		scores 
 		"""
 		# First get file names
-		lbls1name = self.filename.strip('.edf') + '.xls'
-		lbls2name = self.filename.strip('.edf') + '_2.xls'
+		lbls1name = self.filename.strip('.mat') + '.xls'
+		lbls2name = self.filename.strip('.mat') + '_2.xls'
 
 		# Import scores as dataframes
 		lbls1 = pd.read_excel(self.filepath+lbls1name, header = None)
 		lbls2 = pd.read_excel(self.filepath+lbls2name, header = None)
 
 		# Concatenate into same dataframe and keep segments where equal
-		concatted = pd.concat([lbls1[0],lbls2[0]])
+		concatted = pd.concat([lbls1[0],lbls2[0]],1)
 		concatted.columns = ['scorer1','scorer2']
 		scoredf = concatted[concatted['scorer1']==concatted['scorer2']]
 
@@ -83,9 +97,10 @@ class PiezoReader :
 		# each column
 
 		# first reshape the piezo
-		npr = np.reshape(self.piezo,[len(piezo)/(self.fs*4),self.fs*4])
+		npr = np.reshape(self.piezo,[len(self.piezo)/(self.fs*4),self.fs*4])
 
 		# this single function slices the reshaped piezo matrix such that
 		# it retains only segments where doublescored
 		self.piezomat = npr[scoredf.index]
-		self.labels = scoredf['scorer1']
+		# as_matrix ensures indices are not saved since we need only labels
+		self.labels = scoredf['scorer1'].as_matrix()
