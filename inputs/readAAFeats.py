@@ -22,7 +22,7 @@ class ReadFeats:
 		"""
 		self.files = [f for f in listdir(self.filepath) if isfile(join(self.filepath, f))]
 
-	def combinefeatsmats(self) :
+	def getdata(self) :
 		"""
 		Uses all files found in getallfeatsfiles and combines the data in them
 		into randomized NumPy array

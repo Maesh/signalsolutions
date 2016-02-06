@@ -163,7 +163,7 @@ def evenup(X,y) :
 	# return the new matrices
 	return newX.astype(int), newy.astype(int) # make sure they're int
 
-def contextfeats(X, time_step = 4) :
+def contextfeats(X, time_step = 2) :
 	"""
 	Returns a feature matrix containing contextual features
 	for every time segment by expanding the dimensionality 

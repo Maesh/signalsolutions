@@ -7,7 +7,7 @@ Created by: Ryan Gooch, January 13, 2016
 """
 import numpy as np 
 
-from inputs.miceinputs import miceloader
+from inputs.readAAFeats import ReadFeats
 from sklearn import cross_validation, preprocessing, metrics
 from micefuncs.miceFuncs import onehotcoder, spliteven, evenup
 
@@ -20,22 +20,26 @@ if __name__ == '__main__':
 	# Get mice data using custom class
 	# Usage is miceloader(trainmice = 14,random_state = 2016,
 	#	datadir = 'MiceData/Feats File/')
-	ML = miceloader(random_state = rs)
-	X_train, X_test, y_train, y_test = ML.getdata()
+	r = ReadFeats(filepath = 'MiceData/FeatsFiles/')
+	X, y = r.getdata()
 
 	# Clean data, ensure no infs
-	X_train[X_train == np.inf] = 0
-	X_test[X_test == np.inf] = 0
+	X[X == np.inf] = 0
+
+	# X = contextfeats(X, time_step = 2)
 
 	# Scale data
-	X_train = preprocessing.scale(X_train)
-	X_test = preprocessing.scale(X_test)
+	X = preprocessing.scale(X)
 
 	# Create validation set using sklearn. This will also shuffle
 	# features in training and test sets
+	X_train, X_test, y_train, y_test = \
+		cross_validation.train_test_split(X, y, \
+			test_size=0.2, random_state=rs)
+
 	X_train, X_val, y_train, y_val = \
 		cross_validation.train_test_split(X_train, y_train, \
-			test_size=0.2, random_state=rs)
+			test_size=0.25, random_state=rs)
 
 	# Train the classifier and fit to training data
 	# Grid search for RBF

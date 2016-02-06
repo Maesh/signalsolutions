@@ -7,7 +7,7 @@ Created by: Ryan Gooch, January 13, 2016
 """
 import numpy as np 
 
-from inputs.miceinputs import miceloader
+from inputs.readAAFeats import ReadFeats
 from micefuncs.keraswrapper import NN
 from sklearn import cross_validation, preprocessing, metrics
 from micefuncs.miceFuncs import onehotcoder, spliteven, evenup, contextfeats
@@ -22,24 +22,32 @@ if __name__ == '__main__':
 	# Usage is miceloader(trainmice = 14,random_state = 2016,
 	#	datadir = 'MiceData/Feats File/')
 	
-	ML = miceloader(random_state = rs)
+	# ML = miceloader(random_state = rs)
 
-	X_train, X_test, y_train, y_test = ML.getdata()
+	# X_train, X_test, y_train, y_test = ML.getdata()
+	r = ReadFeats(filepath = 'MiceData/FeatsFiles/')
+	X, y = r.getdata()
 
 	# Clean data, ensure no infs
-	X_train[X_train == np.inf] = 0
-	X_test[X_test == np.inf] = 0
+	X[X == np.inf] = 0
+	# X_test[X_test == np.inf] = 0
 
+	# Add contextfeats
+	X = contextfeats(X, time_step = 2)
 
 	# Scale data
-	X_train = preprocessing.scale(X_train)
-	X_test = preprocessing.scale(X_test)
+	X = preprocessing.scale(X)
+	# X_test = preprocessing.scale(X_test)
 
 	# Create validation set using sklearn. This will also shuffle
 	# features in training and test sets
-	X_train, X_val, y_val, y_val = \
-		cross_validation.train_test_split(X_train, y_train, \
+	X_train, X_test, y_train, y_test = \
+		cross_validation.train_test_split(X, y, \
 			test_size=0.2, random_state=rs)
+
+	X_train, X_val, y_train, y_val = \
+		cross_validation.train_test_split(X_train, y_train, \
+			test_size=0.25, random_state=rs)
 
 
 	# clf = NN(inputShape = X_train.shape[1], layers = [64, 64], 
@@ -56,8 +64,8 @@ if __name__ == '__main__':
 	# metrics.classification_report(y_test,testpreds)
 
 	# add contextual features?
-	X_train = contextfeats(X_train)
-	X_val = contextfeats(X_val)
+	# X_train = contextfeats(X_train, time_step = 2)
+	# X_val = contextfeats(X_val, time_step = 2)
 
 	# Fake class equal probability with custom spliteven function
 	# X_train, y_train = spliteven(X_train,y_train,bootstrap = False, size = 1)
@@ -79,31 +87,34 @@ if __name__ == '__main__':
 	# labels to accommodate this.
 	y_train_onehot = onehotcoder(y_train)
 
+	print('X_train number of features is %f' % X_train.shape[1])
 	model = Sequential()
 	# Dense(64) is a fully-connected layer with 64 hidden units.
 	# in the first layer, you must specify the expected input data shape:
 	# here, 20-dimensional vectors.
-	model.add(Dense(32, input_dim=X_train.shape[1], init='uniform'))
+	init = 'he_normal'
+	model.add(Dense(32, input_dim=X_train.shape[1], init=init))
 	model.add(Activation('relu'))
 	model.add(Dropout(0.5))
-	model.add(Dense(64, init='uniform',input_dim=32))
+	model.add(Dense(64, init=init,input_dim=32))
 	model.add(Activation('relu'))
 	model.add(Dropout(0.5))
-	model.add(Dense(32, init='uniform',input_dim=64))
+	model.add(Dense(32, init=init,input_dim=64))
 	model.add(Activation('relu'))
 	model.add(Dropout(0.5))
-	model.add(Dense(3, init='uniform',input_dim=32))
+	model.add(Dense(3, init=init,input_dim=32))
 	model.add(Activation('softmax'))
 
 	sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
 	
 	# Use mean absolute error as loss function since that is 
 	# what kaggle uses
-	model.compile(loss='binary_crossentropy', optimizer=sgd)
+	model.compile(loss='categorical_crossentropy', optimizer=sgd)
 
 	# Batch size = 100 seems to have stabilized it
-	model.fit(X_train, y_train_onehot, nb_epoch=10, batch_size=128)
-	predictions = model.predict(X_val,batch_size=128)
+	Xtr = np.random.rand(X_train.shape[0],X_train.shape[1])
+	model.fit(X_train, y_train_onehot, nb_epoch=100, batch_size=4096)
+	predictions = model.predict(X_val,batch_size=4096)
 
 	# Convert resulting predictions back to labels 1, 2, and 3
 	# Take max value in preds rows as classification
