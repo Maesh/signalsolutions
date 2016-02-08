@@ -1,17 +1,16 @@
 """
-Implements SVM of the user's design and specification
+Implements KNeighbors of the user's design and specification
 on the mice data. Imports training and test sets, and creates a 
 validation set from the training data.
 
-Created by: Ryan Gooch, January 13, 2016
+Created by: Ryan Gooch, Feb, 2016
 """
 import numpy as np 
 
 from inputs.readAAFeats import ReadFeats
-from sklearn import cross_validation, preprocessing, metrics
+from sklearn import cross_validation, preprocessing, metrics, neighbors
 from micefuncs.miceFuncs import onehotcoder, spliteven, evenup
 
-from sklearn import svm, cross_validation, preprocessing, metrics, decomposition
 from sklearn.grid_search import GridSearchCV
 
 if __name__ == '__main__':
@@ -53,8 +52,8 @@ if __name__ == '__main__':
 	# print classifier.best_score_
 	# print classifier.best_estimator_
 
-	classifier = svm.LinearSVC(dual=False,
-		random_state=rs,C=100)
+	classifier = neighbors.KNeighborsClassifier(n_jobs = -1,
+		algorithm = 'auto', weights = 'distance', n_neighbors = 10)
 	classifier.fit(X_train,y_train)
 	pred = classifier.predict(X_val)
 
